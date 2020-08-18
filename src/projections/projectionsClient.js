@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const util = require('util');
 const ProjectionCommandFailedError = require('../errors/projectionCommandFailedError');
@@ -14,9 +15,10 @@ function safeParseJson(json) {
   }
 }
 
-function ProjectionsClient(log, operationTimeout) {
+function ProjectionsClient(log, operationTimeout, requestOptions) {
   this._log = log;
   this._operationTimeout = operationTimeout;
+  this._requestOptions = requestOptions
 }
 
 ProjectionsClient.prototype.enable = function(httpEndPoint, name, userCredentials) {
@@ -111,17 +113,18 @@ ProjectionsClient.prototype.delete = function(httpEndPoint, name, deleteEmittedS
 };
 
 ProjectionsClient.prototype.request = function(method, _url, data, userCredentials, expectedCode) {
-  const options = url.parse(_url);
+  const options = Object.assign({}, url.parse(_url), this._requestOptions);
   options.method = method;
   if (userCredentials) {
     options.auth = [userCredentials.username, userCredentials.password].join(':');
   }
+  const client = options.protocol === 'https:' ? https : http
   var self = this;
   return new Promise(function (resolve, reject) {
     const timeout = setTimeout(function () {
       reject(new Error(util.format('Request timed out for %s on %s', method, _url)))
     }, self._operationTimeout);
-    const req = http.request(options, function (res) {
+    const req = client.request(options, function (res) {
       const hasExpectedCode = res.statusCode === expectedCode;
       var result = '';
       res.setEncoding('utf8');

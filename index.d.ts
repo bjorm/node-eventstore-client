@@ -3,6 +3,7 @@
 
 import { EventEmitter } from 'events';
 import { StrictEventEmitter } from 'strict-event-emitter-types';
+import { Url } from "url";
 
 // Expose classes
 export class Position {
@@ -67,8 +68,12 @@ export interface ProjectionDetails {
     readonly writePendingEventsAfterCheckpoint: number
 }
 
+export interface RequestOptions extends Partial<Url> {
+    rejectUnauthorized: boolean
+}
+
 export class ProjectionsManager {
-    constructor(log: Logger, httpEndPoint: string, operationTimeout: number);
+    constructor(log: Logger, httpEndPoint: string, operationTimeout: number, requestOptions: RequestOptions);
     enable(name: string, userCredentials: UserCredentials): Promise<void>;
     disable(name: string, userCredentials: UserCredentials): Promise<void>;
     abort(name: string, userCredentials: UserCredentials): Promise<void>;
